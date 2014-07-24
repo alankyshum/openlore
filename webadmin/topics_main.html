@@ -1,0 +1,85 @@
+
+<style>
+	/* CSS for titles on the main page */
+	.tile-avatar {
+		height: 100px;
+		width: 100px;
+		border-radius: 100%;
+		background: url("images/physProf.jpg");
+		background-size: contain;
+		box-shadow: #a7a7a7 0px 0px 10px;
+	}
+	.tile-content {
+		margin-left: 10px;	
+	}
+	.mainTile {
+		border: 1px solid #d8d8d8;	
+		padding: 10px;
+		margin: 5px;
+		border-radius: 15px;
+	}
+	.courseCode {
+		margin-left: 10px;
+		padding: 22px 22px;
+		text-align: center;
+		border: 1px solid #b9b9b9;
+		color: #545454;
+		height: 100px;
+		width: 100px;
+		border-radius: 100%;	
+	}
+	.courseDes {
+		margin-top: 19px;	
+	}
+</style>
+
+
+<div class="row">				
+	<!-- Current Class Tile for the main page -->
+	<div id="currentClassTile" class="col-sm-12">
+		<div class="panel panel-default">
+			<div class="panel-heading"><h3 class="panel-title"><span class="glyphicon glyphicon-play-circle"></span> Current Class</h3></div>
+			<div class="panel-body">
+				<div class="row mainTile">
+					<div class="col-sm-3 col-xs-12"><div class="tile-avatar"></div></div>
+					<div class="col-sm-9 col-xs-12"><div class="title-content">
+						<h3>PHYS1003</h3>
+						<p>PHYS1003 is currently running</p>
+					</div></div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- Recent Updates Tile for the main page -->
+	<div id="recentUpdatesTile" class="col-sm-12">
+		<div class="panel panel-default">
+			<div class="panel-heading"><h3 class="panel-title"><span class="glyphicon glyphicon-fire"></span> Recent Updates</h3></div>
+			<div class="panel-body">
+				<div class="row mainTitle">
+					<div class="courseCode col-xs-2">
+						<h4>PHYS 1003</h4>
+					</div>
+					<div class="courseDes col-xs-10">
+						<div class="well"><ul>
+							<li>Video of the last lecture (26/04/2014) has been uploaded.</li>
+							<li>Current topic: "Ch10. Energy Efficiency"</li>
+						</ul></div>
+					</div>
+				</div>
+				<div class="row mainTitle">
+					<div class="courseCode col-xs-2">
+						<h4>MATH 1013</h4>
+					</div>
+					<div class="courseDes col-xs-10">
+						<div class="well">
+							<ul>
+								<li>MidTerm next week in LT-J.</li>
+							</ul>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>

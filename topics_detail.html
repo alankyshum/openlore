@@ -1,0 +1,147 @@
+<link rel="stylesheet" type="text/css" href="./css/generalCSS.css" />
+<div class="row">
+	
+	<div id="Video_Section" class="col-md-6">
+		<div class="panel panel-default">
+			<div class="panel-heading"><h3 class="panel-title"><span class="glyphicon glyphicon-film"></span> Lecture Video</h3></div>
+			<div class="panel-body">
+				<div id="VideoMaster"></div>
+			</div>
+		</div>
+	</div>
+	
+	<div id="File_Section" class="col-md-6">
+		<div class="panel panel-default">
+			<div class="panel-heading"><h3 class="panel-title"><span class="glyphicon glyphicon-file"></span> Slideshow</h3></div>
+			<div class="panel-body">
+				<button onclick="loadSlideShow();" class="pull-right btn btn-default" type="button">Get SlideShow</button>
+				<iframe style="display: none;" height="300px;" id="slideshow" src=""></iframe>
+			</div>
+		</div>
+		<script>
+			function loadSlideShow() {
+				$.ajax({
+					url: './process/processData.php',
+					type: 'POST',
+					data: {requestLinks: "yes"},
+					dataType: 'json',
+					success: function(res) {
+						if (res['data']) {
+							console.log(res['data']);
+							$('#slideshow').attr("src", res['data']);
+							$('#slideshow').css("display", "inherit");
+						};
+					},
+					error: function(error) {console.error(error);}
+				});
+			}
+			function resizeTiles() {
+				$('#slideshow').width($('#File_Section').width()-35);
+				$('#whiteBoard').width($('#Whiteboard_Section').width()-35);
+				$('#rtc').width($('#Video_Section').width()-35);
+			}
+			$(window).resize(function() {
+				resizeTiles();
+			});
+		</script>
+	</div>
+	
+	<div id="Whiteboard_Section" class="col-md-7">
+		<div class="panel panel-default">
+			<div class="panel-heading"><h3 class="panel-title"><span class="glyphicon glyphicon-pencil"></span> White Board</h3></div>
+			<div class="panel-body">
+			<iframe id="whiteBoard" height="300px;" src="draw_module/index.html"></iframe>
+			</div>
+		</div>
+	</div>
+	
+	<script src="./js/generalJS.js"></script>
+	<script>
+		function loadVideo() {
+			$('#VideoMaster').load("./webrtc/video_client.html");
+		}
+		
+		function postMessage() {
+			$.ajax({
+				url: './process/processData.php',
+				type: 'POST',
+				data: {message: $('#myMessage').val()},
+				dataType: 'json',
+				success: function(res) {
+					if (res['data']) {
+						console.log(res['data']);
+						getMessages();
+					};
+				},
+				error: function(error) {console.error(error);}
+			});
+		}
+	</script>
+	
+
+	
+	<div id="Comments_Section" class="col-md-5">
+		<div class="panel panel-default">
+			<div class="panel-heading"><h3 class="panel-title"><span class="glyphicon glyphicon-comment"></span> Public Chat Room</h3></div>
+			<div class="panel-body">
+				<div id="messageContent"></div>
+				<textarea id="myMessage" class="form-control" rows="3"></textarea>
+				<button onclick="postMessage();" class="pull-right btn btn-primary" type="button"><span class="glyphicon glyphicon-send"></span> Submit Message!</button>
+			</div>
+		</div>
+	</div>
+</div>
+
+	<div id="Playback_Section" class="col-md-12">
+		<div class="panel panel-default">
+			<div class="panel-heading"><h3 class="panel-title"><span class="glyphicon glyphicon-pencil"></span> Video Playback</h3></div>
+			<div class="panel-body">
+				<div class="row">
+					<div class="col-md-4">
+					<audio src="./webrtc/uploads/176431834.wav" id="audioplayback" type="audio/wav"></audio>
+				 <video src="./webrtc/uploads/176431834.webm" id="videoplayback" type='video/webm; codecs="vp8, vorbis"' 	controls></video>
+				<!--show番D comment -->
+				<script>
+				function syncTracks(){
+					 var audio = document.getElementById("audioplayback"); 
+					 var video = document.getElementById("videoplayback");
+					 audio.currentTime = video.currentTime;
+					 if (video.play) {
+						audio.play(); 
+					}
+					if (video.paused) {
+						audio.pause(); 
+					}
+
+				}
+				function jumpbookmark(timestamp){
+					 var audio = document.getElementById("audioplayback"); 
+					 var video = document.getElementById("videoplayback");
+					 audio.currentTime = timestamp;
+					video.currentTime = timestamp;
+
+				}
+				setInterval(function(){syncTracks();},1000);
+					</script>
+						</div>
+					<div class="col-md-8">
+					
+					</div>
+					</div>
+			</div>
+		</div>
+	</div>
+
+<script>
+	function refreshMsg() {
+		setTimeout(refreshMsg, 5000);
+		console.log("refreshLink");
+		getMessages();
+	}
+	
+	$(document).ready(function() {
+		loadVideo();
+		resizeTiles();
+		refreshMsg();
+	});
+</script>

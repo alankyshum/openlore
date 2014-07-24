@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<title>Starter Template for Bootstrap</title>
+		<!-- JavaScript -->
+		<script src="js/jquery-2.1.0.min.js"></script>
+		<script src="js/bootstrap.min.js"></script>
+		<!-- Bootstrap CSS -->
+		<link href="css/bootstrap.min.css" rel="stylesheet">
+		<link href="css/bootstrap-theme.min.css" rel="stylesheet">
+		<!-- Custom CSS -->
+		<link href="css/TopicPage/topicpage.css" rel="stylesheet">
+		<style>
+			/* CSS for badges near the organisation */
+			.sidebar-nav li .badge {
+				margin-top: 4%;
+				margin-right: 10px;
+			}
+			
+			/* CSS for search bar */
+			#navbar-search {
+				width: 90%;
+				margin: 10px auto 20px auto;
+			}
+			
+			/* CSS for narbar-topics items */
+			.navbar-topic {
+				font-weight: bold;	
+			}
+			.navbar-topic ul {
+				list-style: none;
+				display: none;
+			}
+			.navbar-topic li {
+				font-weight: lighter;
+				color: #838383;
+				line-height: 2.0em;
+				margin-left: -20px;
+			}
+			#menu-toggle {
+				margin-left: 20px;
+				margin-top: -10px;
+			}
+			#sidebar_emblem {
+				height: 100%;
+				background-size: cover;
+				background: url("./images/grey_logo.png") no-repeat 0 130%;
+			}
+		</style>
+</head>
+<body>
+
+    <div id="wrapper">
+
+        <!-- Sidebar -->
+        <div id="sidebar-wrapper">
+            <ul class="sidebar-nav">
+                <li class="sidebar-brand"><a onclick="loadMain();" href="#"><img height="45px;" src="images/OpenLore_Logo.png"></a></li>
+								<li><input class="form-control" id="navbar-search" type="text" placeholder="Search here"></li>
+								<li><hr style="border-color: #000;" /></li>
+								<li class="navbar-topic">
+									<a href="#">Physics<span class="badge pull-right">2</span></a>
+									<ul><li><a href="#">PHYS 1003</a></li><li><a href="#">PHYS 1114</a></li></ul>
+								</li>
+								<li class="navbar-topic">
+									<a href="#">Mathematics<span class="badge pull-right">5</span></a>
+									<ul><li><a href="#">MATH 1013</a></li><li><a href="#">MATH 2111</a></li><li><a href="#">MATH 2123</a></li><li><a href="#">MATH 2351</a></li><li><a href="#">MATH 2343</a></li></ul>
+								</li>
+            </ul>
+						<div id="sidebar_emblem"></div>
+        </div>
+
+        <!-- Page content -->
+        <div id="page-content-wrapper">
+            <div class="content-header">
+							<button id="menu-toggle" class="btn btn-default" type="button"><span class="glyphicon glyphicon-align-justify"></span></button>
+							<h1 id="contentPageTitle">Welcome back!</h1>
+            </div>
+            <!-- Keep all page content within the page-content inset div! -->
+            <div id="contentArea" class="page-content inset"></div>
+
+				</div>
+
+    <!-- Custom JavaScript for the Menu Toggle -->
+		<script>
+			function loadChat(courseCode) {
+				window.scrollback = {
+				streams:[courseCode],
+				theme: 'light',
+				ticker: true
+				};
+
+				/***** don't edit below *****/
+				(function(d,s,h,e){e=d.createElement(s);e.async=1;
+				e.src=h+'/client.min.js';scrollback.host=h;
+				d.getElementsByTagName(s)[0].parentNode.appendChild(e);}
+				(document,'script',(location.protocol=="https:"?"https:":"http:")+'//scrollback.io'));
+			}
+			
+			$(".navbar-topic a").click(function() {
+				var e = $(this).parent().children("ul");
+				if (e.css("display") == "none") {
+					e.css("display", "block");
+				} else {
+					e.css("display", "none");	
+				}
+			});
+			$("#menu-toggle").click(function(e) {
+				e.preventDefault();
+				$("#wrapper").toggleClass("active");
+			});
+			function loadMain() {
+				$('#contentArea').load("topics_main.html");	
+			}
+			$(document).ready(loadMain());
+			$('.navbar-topic li').click(function(e) {
+				e.preventDefault();
+				$('#contentPageTitle')[0].innerText = e.currentTarget.innerText;
+				$('#contentArea').load('topics_detail.html');
+			});
+		</script>
+</body>
+
+</html>

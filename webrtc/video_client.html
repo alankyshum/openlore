@@ -1,0 +1,464 @@
+
+
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title>WebRTC Broadcasting</title>
+        <style>
+            audio, video {
+                -moz-transition: all 1s ease;
+                -ms-transition: all 1s ease;
+                -o-transition: all 1s ease;
+                -webkit-transition: all 1s ease;
+                transition: all 1s ease;
+                vertical-align: top;
+                width: 100%;
+            }
+
+            select {
+                border: 1px solid #d9d9d9;
+                border-radius: 1px;
+                height: 50px;
+                margin-left: 1em;
+                margin-right: -12px;
+                padding: 1.1em;
+                vertical-align: 6px;
+                width: 18%;
+            }
+
+            .setup {
+            }
+
+            #videos-container video {
+                margin-top: 30px;
+                border: 1px solid #777;
+                border-radius: 10px;
+                box-shadow: #777 0px 0px 10px;
+            }
+            #commentList {
+                list-style: none;
+            }
+        </style>
+        
+        <!-- scripts used for broadcasting -->
+        <script src="./webrtc/firebase.js"> </script>
+        <script src="./webrtc/RTCPeerConnection-v1.5.js"> </script>
+        <script src="./webrtc/broadcast.js"> </script>
+		<script src="./webrtc/RecordRTC.js"> </script>
+     <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+    </head>
+
+    <body>
+        <article>
+        
+            <!-- just copy this <section> and next script -->
+            <section class="experiment" style="padding:1em 2em;">
+                <div style="display: none;" class="input-group">
+                    <input type="hidden" id="broadcasting-option" value="Audio + Video"/>
+                    <input class="form-control" type="text" id="broadcast-name" placeholder="Enter the name of the broadcast here: ">
+                    <input type="hidden" id="mytime">
+                    <span class="input-group-btn">
+                    <button type="button" id="setup-new-broadcast" class="btn btn-success setup">Start New Broadcast</button>
+                    </span>
+                </div><!-- /input-group -->
+
+                <!-- list of all available broadcasting rooms -->
+                <table style="width: 100%;" id="rooms-list"></table>
+                
+                <!-- local/remote videos container -->
+                <div id="VideoLoadingText">
+                    <p>Waiting for a room to be open and broadcasted~~</p>
+                </div>
+                <div id="videos-container"></div>
+                <div id="container"></div>
+				<section id="prof">
+                    <button style="display: none;" type="button" class="pull-right btn btn-danger" id="stop">Stop</button>
+					<!--<button id="delete">Delete your webm/wav files from Server</button>-->
+				</section>
+                <div id="comment" style="display: none;">
+                    <ul id="commentList">
+                        <?php foreach ($comments as $comment): ?>
+                            <li><?php ehco $comment;?></li>
+                        <?php endif ?>
+                    </ul>
+                    <div class="input-group">
+                        <input type="text" id="commenttextfield" class="form-control" placeholder="Input you comment here: ">
+                        <span class="input-group-btn">
+                            <button class="btn btn-default" id="sendbutton" type="button">Send</button>
+                        </span>
+                    </div><!-- /input-group -->
+                </div>
+            </section>
+        
+            <script>
+
+                var config = {
+                    openSocket: function(config) {
+        
+                        //var channel = config.channel || "openLore" + $('#contentPageTitle').text();
+                        var channel = "openLore" + $('#contentPageTitle').text();
+                        //var channel = config.channel || location.href.replace( /\/|:|#|%|\.|\[|\]/g , '');
+                        var socket = new Firebase('https://hugotkk.firebaseio.com/' + channel);
+                        socket.channel = channel;
+                        socket.on("child_added", function(data) {
+                            config.onmessage && config.onmessage(data.val());
+                        });
+                        socket.send = function(data) {
+                            this.push(data);
+                        };
+                        config.onopen && setTimeout(config.onopen, 1);
+                        socket.onDisconnect().remove();
+                        return socket;
+                    },
+                    onRemoteStream: function(htmlElement) {
+                        htmlElement.setAttribute('controls', true);
+                        videosContainer.insertBefore(htmlElement, videosContainer.firstChild);
+                        htmlElement.play();
+                       // rotateInCircle(htmlElement);
+						console.log('i am client');
+                        getTimeOffset();
+                        getTimeOffset();
+                        $('#stop').remove();
+                        $('#delete').remove();
+                        $('#comment').show();
+
+                    },
+                    onRoomFound: function(room) {
+
+                        var alreadyExist = document.querySelector('button[data-broadcaster="' + room.broadcaster + '"]');
+                        if (alreadyExist) return;
+
+                        // Delete the "waiting box"
+                        $('#VideoLoadingText').css("display", "none");
+                        
+
+                        if (typeof roomsList === 'undefined') roomsList = document.body;
+
+                        var tr = document.createElement('tr');
+                        tr.innerHTML = '<td style="display" ><strong>' + room.roomName + '</strong> is broadcasting his media!</td>' +
+                            '<td><button type="button" class="btn btn-default join">Join</button></td>';
+                        roomsList.insertBefore(tr, roomsList.firstChild);
+
+                        var joinRoomButton = tr.querySelector('.join');
+                        joinRoomButton.setAttribute('data-broadcaster', room.broadcaster);
+                        joinRoomButton.setAttribute('data-roomToken', room.broadcaster);
+                        joinRoomButton.onclick = function() {
+                            this.disabled = true;
+
+                            var broadcaster = this.getAttribute('data-broadcaster');
+                            var roomToken = this.getAttribute('data-roomToken');
+                            broadcastUI.joinRoom({
+                                roomToken: roomToken,
+                                joinUser: broadcaster
+                            });
+
+                            var time = document.getElementById('mytime');
+                            time.value = room.mytime;
+
+                            hideUnnecessaryStuff();
+
+                        };
+                    },
+                    onNewParticipant: function(numberOfViewers) {
+                        document.title = 'Viewers: ' + numberOfViewers;
+                    }
+                };
+				// create the broadcasr
+                function setupNewBroadcastButtonClickHandler() {
+					// disable the buttons
+                    document.getElementById('broadcast-name').disabled = true;
+                    document.getElementById('setup-new-broadcast').disabled = true;
+
+					// create the camera
+                    captureUserMedia(function() {
+					
+						// check the options of broadcast type
+                        var shared = 'video';
+                        if (window.option == 'Only Audio') shared = 'audio';
+                        if (window.option == 'Screen') shared = 'screen';
+						
+						// create a room
+                        broadcastUI.createRoom({
+                            roomName: (document.getElementById('broadcast-name') || { }).value || 'Anonymous',
+                            isAudio: shared === 'audio'
+                        });
+						
+                    });
+					
+					// hide useless ui
+                    hideUnnecessaryStuff();
+                }
+				
+
+                function captureUserMedia(callback) {
+				
+					// constraints 
+                    var constraints = null;
+                    window.option = broadcastingOption ? broadcastingOption.value : '';
+                    if (option === 'Only Audio') {
+                        constraints = {
+                            audio: true,
+                            video: false
+                        };
+                    }
+                    if (option === 'Screen') {
+                        var video_constraints = {
+                            mandatory: {
+                                chromeMediaSource: 'screen'
+                            },
+                            optional: []
+                        };
+                        constraints = {
+                            audio: false,
+                            video: video_constraints
+                        };
+                    }
+
+                    var htmlElement = document.createElement(option === 'Only Audio' ? 'audio' : 'video');
+                    htmlElement.setAttribute('autoplay', true);
+                    htmlElement.setAttribute('controls', true);
+					htmlElement.setAttribute('id', 'preview');	
+					
+                    videosContainer.insertBefore(htmlElement, videosContainer.firstChild);
+					// media component
+                    var mediaConfig = {
+                        video: htmlElement,	// that html code of the video
+                        onsuccess: function(stream) {
+                            config.attachStream = stream;
+                            callback && callback();
+                            htmlElement.setAttribute('muted', true);
+                          //  rotateInCircle(htmlElement);
+							recording(stream);
+							
+                        },
+                        onerror: function() {
+                            if (option === 'Only Audio') alert('unable to get access to your microphone');
+                            else if (option === 'Screen') {
+                                if (location.protocol === 'http:') alert('Please test this WebRTC experiment on HTTPS.');
+                                else alert('Screen capturing is either denied or not supported. Are you enabled flag: "Enable screen capture support in getUserMedia"?');
+                            } else alert('unable to get access to your webcam');
+                        }
+                    };
+                    if (constraints) mediaConfig.constraints = constraints;
+					
+					//  setup
+				    	
+                    console.log('hello bab');
+                    console.log(mediaConfig);
+                    getUserMedia(mediaConfig);
+						
+					
+                }
+
+                var broadcastUI = broadcast(config);
+
+                /* UI specific */
+                var videosContainer = document.getElementById('videos-container') || document.body;
+                var setupNewBroadcast = document.getElementById('setup-new-broadcast');
+                var roomsList = document.getElementById('rooms-list');
+
+                var broadcastingOption = document.getElementById('broadcasting-option');
+
+				// create the broadcast
+                if (setupNewBroadcast) setupNewBroadcast.onclick = setupNewBroadcastButtonClickHandler;
+
+                function hideUnnecessaryStuff() {
+                    var visibleElements = document.getElementsByClassName('visible'),
+                        length = visibleElements.length;
+                    for (var i = 0; i < length; i++) {
+                        visibleElements[i].style.display = 'none';
+                    }
+                }
+				// rotate the video
+                /*
+                function rotateInCircle(video) {
+                    video.style[navigator.mozGetUserMedia ? 'transform' : '-webkit-transform'] = 'rotate(0deg)';
+                    setTimeout(function() {
+                        video.style[navigator.mozGetUserMedia ? 'transform' : '-webkit-transform'] = 'rotate(360deg)';
+                    }, 1000);
+                }
+                */
+				
+			// upload the file to the server
+                function PostBlob(blob, fileType, fileName) {
+                    console.log('PostBlob is invoked',arguments);
+				// FormData
+				var formData = new FormData();
+				formData.append(fileType + '-filename', fileName);
+				formData.append(fileType + '-blob', blob);
+
+				// progress-bar
+				var hr = document.createElement('hr');
+				container.appendChild(hr);
+				var strong = document.createElement('strong');
+				strong.innerHTML = fileType + ' upload progress: ';
+				container.appendChild(strong);
+				var progress = document.createElement('progress');
+				container.appendChild(progress);
+
+				// POST the Blob
+				xhr('./webrtc/save.php', formData, progress, function(fileURL) {
+					container.appendChild(document.createElement('hr'));
+					var mediaElement = document.createElement(fileType);
+					
+					var source = document.createElement('source');
+                    var href = location.href.substr(0, location.href.lastIndexOf('/') + 1);
+					source.src = href + fileURL;
+					
+					if(fileType == 'video') source.type = 'video/webm; codecs="vp8, vorbis"';
+					if(fileType == 'audio') source.type = 'audio/wav';
+					
+					mediaElement.appendChild(source);
+					
+					mediaElement.controls = true;
+					container.appendChild(mediaElement);
+					mediaElement.play();
+
+					progress.parentNode.removeChild(progress);
+					strong.parentNode.removeChild(strong);
+					hr.parentNode.removeChild(hr);
+				});
+			}
+			
+			// record start
+			function recording(stream) {
+			 console.log('start recording');
+				// var legalBufferValues = [256, 512, 1024, 2048, 4096, 8192, 16384];
+				// sample-rates in at least the range 22050 to 96000.
+				recordAudio = RecordRTC(stream, {
+					bufferSize: 16384,
+					sampleRate: 45000
+				});
+				
+				recordAudio.startRecording();
+				
+				if(!isFirefox) {
+					recordVideo = RecordRTC(stream, {
+						type: 'video',
+						bufferSize: 16384,
+						sampleRate: 45000
+					});
+					recordVideo.startRecording();
+				}
+
+				stop.disabled = false;
+					
+			}
+
+			var record = document.getElementById('record');
+			var stop = document.getElementById('stop');
+			//var deleteFiles = document.getElementById('delete');
+			var preview = document.getElementById('preview');
+			var audio = document.querySelector('audio');
+			var recordVideo = document.getElementById('record-video');
+            var sendbutton = document.getElementById('sendbutton');
+			var container = document.getElementById('container');
+            
+            var isFirefox = !!navigator.mozGetUserMedia;
+
+			var recordAudio, recordVideo;
+
+			// stop the function
+			var fileName;
+			stop.onclick = function() {
+
+				fileName = Math.round(Math.random() * 99999999) + 99999999;
+                
+                if(!isFirefox) {
+                    recordAudio.stopRecording();
+                    PostBlob(recordAudio.getBlob(), 'audio', fileName + '.wav');
+                }
+                else {
+                    recordAudio.stopRecording( function(url) {
+                        preview.src = url;
+                        PostBlob(recordAudio.getBlob(), 'video', fileName + '.webm');
+                    });
+                }
+
+                if(!isFirefox) {
+                    recordVideo.stopRecording();
+                    PostBlob(recordVideo.getBlob(), 'video', fileName + '.webm');
+                }
+
+				//deleteFiles.disabled = false;
+			};
+            function getTimeOffset(){
+                var d = new Date();
+                console.log("start"+ $('#mytime').val());
+                console.log("second"+ d.getTime());
+                var d = (d.getTime()-$('#mytime').val())/1000;
+                min = parseInt(d/60);
+                second = parseInt(d%60);
+                second-=4; 
+                console.log(min + " : "+ second);
+                return (min + ":"+ second);
+            }
+
+            sendbutton.onclick = function() {
+                comment = $('#commenttextfield').val();
+                console.log(comment);
+                if (comment=='') return false;
+                hahatime = getTimeOffset();
+                html = "<a href='#'>" + hahatime + "</a>: " +  comment ;
+                console.log(html);
+                $('#comment ul').before("<li>" + html + "</li>");
+                $('#commenttextfield').val("");
+             };
+
+
+			/*deleteFiles.onclick = function() {
+				deleteAudioVideoFiles();
+			};
+            */
+			// delete the file
+			function deleteAudioVideoFiles() {
+				deleteFiles.disabled = true;
+				if (!fileName) return;
+				var formData = new FormData();
+				formData.append('delete-file', fileName);
+				xhr('delete.php', formData, null, function(response) {
+					console.log(response);
+				});
+				fileName = null;
+				container.innerHTML = '';
+			}
+			// fuction used to upload/ delete the recording file
+			function xhr(url, data, progress, callback) {
+				var request = new XMLHttpRequest();
+				request.onreadystatechange = function() {
+					if (request.readyState == 4 && request.status == 200) {
+						callback(request.responseText);
+					}
+				};
+
+				request.upload.onprogress = function(e) {
+					if(!progress) return;
+					if (e.lengthComputable) {
+						progress.value = (e.loaded / e.total) * 100;
+						progress.textContent = progress.value; // Fallback for unsupported browsers.
+					}
+
+					if(progress.value == 100){
+						progress.value = 0;
+					}
+				};
+				request.open('POST', url);
+				request.send(data);
+			}
+
+			window.onbeforeunload = function() {
+				if (!!fileName) {
+					deleteAudioVideoFiles();
+					return 'It seems that you\'ve not deleted audio/video files from the server.';
+				}
+			};
+
+
+            </script>
+        
+			
+    
+        <!-- commits.js is useless for you! -->
+        <script src="//www.webrtc-experiment.com/commits.js" async> </script>
+    </body>
+</html>

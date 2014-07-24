@@ -1,0 +1,14 @@
+/* CSS for Comment Section */
+#messageContent {
+	word-wrap: break-word;
+	overflow: auto;
+	max-height: 250px;
+}
+#messageContent .row {
+	width: 98%;	
+	margin-top: 10px;
+	margin-bottom: 10px;
+}
+#messageContent ul {
+	list-style: none;
+}

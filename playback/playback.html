@@ -1,0 +1,33 @@
+<html>
+<body>
+
+
+
+ <audio src="../webrtc/uploads/176431834.wav" id="audioplayback" type="audio/wav"></audio>
+ <video src="../webrtc/uploads/176431834.webm" id="videoplayback" type='video/webm; codecs="vp8, vorbis"' 	controls></video>
+<!--show番D comment -->
+<script>
+function syncTracks(){
+   var audio = document.getElementById("audioplayback"); 
+   var video = document.getElementById("videoplayback");
+   audio.currentTime = video.currentTime;
+   if (video.play) {
+		audio.play(); 
+	}
+	if (video.paused) {
+		audio.pause(); 
+	}
+
+}
+function jumpbookmark(timestamp){
+   var audio = document.getElementById("audioplayback"); 
+   var video = document.getElementById("videoplayback");
+   audio.currentTime = timestamp;
+	video.currentTime = timestamp;
+
+}
+setInterval(function(){syncTracks();},1000);
+</script>
+
+</body>
+</html>
